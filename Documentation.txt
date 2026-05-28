@@ -1,0 +1,25 @@
+1. MAIN PROBLEMS ORIGINAL DESIGN
+The original script acted as a "God Object" that violated the Single Responsibility Principle (SRP), integrating everything in one single class: UI, Audio, Save/Load logic, and game rules. It also had hardcoded data, like item prices, making the shop unscalable if new items were to be added, and impossible to unit test without running Unity.
+
+2. RESPONSIBILITIES OF EACH LAYER
+Domain (Player, ShopItem, DoubleCoins, Enums): Contains the pure logic and rules, like checking if the player has enough coins or if an item can be purchased.
+Application (PurchaseItemUseCase, PurchaseItemResponse): Retrieves data, asks the domain, and returns DTOs to the presentation layer.
+Presentation (ShopView, ShopPresenter, IShopView): Handles the UI and audio logic. The view listens to Unity events, and the Presenter connects them to the Use Cases based on the response.
+PlayerPrefsPlayerRepository: Saves/Loads the data using PlayerPrefs, implementing the IPlayerRepository interface.
+Bootstrap: Reads the configuration from the Unity Inspector (costs), creates the objects, and injects the dependencies.
+
+3. USE CASES
+The core use case is PurchaseItemUseCase for buying any item. When Execute() is called with a ShopItem and itemId, it does the following:
+a. Creates a player entity using data from the repository.
+	b. Asks the domain (item.CanBePurchased(player)) if the operation is valid, and receives a PurchaseItemStatus enum.
+	c. If it is valid, it modifies the domain state and uses the repository to save the new changes.
+	d. Lastly, it translates the status enum into a specific string message and returns it inside a PurchaseItemResponse 	object to the Presenter.
+
+4. HOW PERSISTENCE IS ABSTRACTED
+By using the Repository Pattern and Dependency Injection. The core logic only communicates with an interface and is unaware of how data is being saved.
+
+5. HOW CAN THE SOLUTION BE TESTED WITHOUT UNITY
+Because the Domain and Application layers are written in C# and do not inherit from MonoBehaviour. By using an interface (IPlayerRepository) for the repository, we create an "InMemoryPlayerRepository" for the tests that allows you to test the use cases.
+
+6. WHY THE SOLUTION IS BETTER
+Because the refactor makes the code more maintainable, scalable, and testable. By separating responsibilities, changes in the UI won't break the core game rules. It provides a clean architecture and decoupling, and makes adding new shop items in the future a lot easier.
